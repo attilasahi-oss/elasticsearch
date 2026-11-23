@@ -324,6 +324,38 @@ public final class LuceneSliceQueue {
         int minDocsPerSlice,
         QueryWarnings singleValueQueryWarnings
     ) {
+        return create(
+            contexts,
+            queryFunction,
+            dataPartitioning,
+            autoStrategy,
+            docThresholdForAutoStrategy,
+            taskConcurrency,
+            scoreModeFunction,
+            leafSplitGuard,
+            minDocsPerSlice,
+            singleValueQueryWarnings,
+            true
+        );
+    }
+
+    /**
+     * @param regionSlicing whether {@link PartitioningStrategy#DOC} may cut slices only from the doc region selected by range filters
+     *                      on the leading index sort fields. See {@link SortedRegionSlicer}.
+     */
+    public static LuceneSliceQueue create(
+        IndexedByShardId<? extends ShardContext> contexts,
+        Function<ShardContext, List<QueryAndTags>> queryFunction,
+        DataPartitioning dataPartitioning,
+        BiFunction<ShardContext, Query, PartitioningStrategy> autoStrategy,
+        int docThresholdForAutoStrategy,
+        int taskConcurrency,
+        Function<ShardContext, ScoreMode> scoreModeFunction,
+        LeafSplitGuard leafSplitGuard,
+        int minDocsPerSlice,
+        QueryWarnings singleValueQueryWarnings,
+        boolean regionSlicing
+    ) {
         List<LuceneSlice> slices = new ArrayList<>();
         Map<String, PartitioningStrategy> partitioningStrategies = new HashMap<>();
 
@@ -368,13 +400,23 @@ public final class LuceneSliceQueue {
                     var partitioning = PartitioningStrategy.pick(dataPartitioning, autoStrategy, docThresholdForAutoStrategy, ctx, query);
                     partitioningStrategies.put(ctx.shardIdentifier(), partitioning);
                     var weightAndCache = weight(ctx, query, scoreMode, partitioning);
-                    List<List<PartialLeafReaderContext>> groups = partitioning.groups(
-                        ctx.searcher(),
-                        taskConcurrency,
-                        weightAndCache.weight,
-                        leafSplitGuard,
-                        minDocsPerSlice
-                    );
+                    List<List<PartialLeafReaderContext>> groups = null;
+                    if (regionSlicing && partitioning == PartitioningStrategy.DOC && leafSplitGuard == LeafSplitGuard.NEVER) {
+                        try {
+                            groups = SortedRegionSlicer.slice(ctx.searcher(), query, taskConcurrency);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                    if (groups == null) {
+                        groups = partitioning.groups(
+                            ctx.searcher(),
+                            taskConcurrency,
+                            weightAndCache.weight,
+                            leafSplitGuard,
+                            minDocsPerSlice
+                        );
+                    }
                     boolean queryHead = true;
                     for (List<PartialLeafReaderContext> group : groups) {
                         if (group.isEmpty() == false) {

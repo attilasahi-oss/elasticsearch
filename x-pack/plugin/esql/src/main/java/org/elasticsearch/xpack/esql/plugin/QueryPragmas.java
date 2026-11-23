@@ -256,6 +256,13 @@ public final class QueryPragmas implements Writeable {
      */
     public static final Setting<Integer> MIN_DOCS_PER_SLICE = Setting.intSetting("min_docs_per_slice", -1, -1);
 
+    /**
+     * Whether {@code DOC} partitioning may cut slices only from the doc region that range filters on the leading index sort fields
+     * can match (see {@code SortedRegionSlicer}). Defaults to {@code true}; set to {@code false} to get the plain doc count
+     * partitioning, for example to compare results and timing.
+     */
+    public static final Setting<Boolean> REGION_SLICING = Setting.boolSetting("region_slicing", true);
+
     public static final QueryPragmas EMPTY = new QueryPragmas(Settings.EMPTY);
 
     public static final List<String> VALID_PRAGMA_NAMES = Stream.of(
@@ -284,6 +291,7 @@ public final class QueryPragmas implements Writeable {
         MAX_CONCURRENT_OPEN_SEGMENTS,
         MAX_RECORD_SIZE,
         FORCE_DOC_SEQUENCE,
+        REGION_SLICING,
         PlannerSettings.TIME_SERIES_TARGET_CHUNK_ROWS,
         PlannerSettings.AGG_PARTITIONING_COUNT_THRESHOLD,
         SINGLE_NODE_OPTIMIZATIONS
@@ -580,6 +588,13 @@ public final class QueryPragmas implements Writeable {
     public int minDocsPerSlice(int defaultMinDocsPerSlice) {
         int override = MIN_DOCS_PER_SLICE.get(settings);
         return override > 0 ? override : defaultMinDocsPerSlice;
+    }
+
+    /**
+     * Whether {@code DOC} partitioning may slice only the doc region selected by filters on the leading index sort fields.
+     */
+    public boolean regionSlicing() {
+        return REGION_SLICING.get(settings);
     }
 
     public boolean isEmpty() {

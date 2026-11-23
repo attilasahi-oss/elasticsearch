@@ -37,6 +37,16 @@ public class QueryPragmasTests extends ESTestCase {
         assertThat(pragmas.timeSeriesTargetChunkRows(clusterDefault), equalTo(clusterDefault));
     }
 
+    public void testRegionSlicingIsOnByDefault() {
+        assertTrue(new QueryPragmas(Settings.EMPTY).regionSlicing());
+    }
+
+    public void testRegionSlicingPragmaCanTurnItOff() {
+        QueryPragmas pragmas = new QueryPragmas(Settings.builder().put(QueryPragmas.REGION_SLICING.getKey(), false).build());
+        assertFalse(pragmas.regionSlicing());
+        assertThat(QueryPragmas.VALID_PRAGMA_NAMES, hasItem(QueryPragmas.REGION_SLICING.getKey()));
+    }
+
     public void testMaxBranchCountPerMergeIsValidPragmaName() {
         assertThat(QueryPragmas.VALID_PRAGMA_NAMES, hasItem(QueryPragmas.MAX_BRANCH_COUNT_PER_MERGE.getKey()));
     }

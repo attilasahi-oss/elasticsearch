@@ -134,6 +134,44 @@ public class LuceneSourceOperator extends LuceneOperator {
             QueryWarnings singleValueQueryWarnings,
             @Nullable MinCompetitiveQuery.Factory minCompetitive
         ) {
+            this(
+                shardContexts,
+                queryFunction,
+                dataPartitioning,
+                autoStrategy,
+                docThresholdForAutoStrategy,
+                taskConcurrency,
+                maxPageSize,
+                limit,
+                needsScore,
+                directoryBytesRead,
+                minDocsPerSlice,
+                singleValueQueryWarnings,
+                minCompetitive,
+                true
+            );
+        }
+
+        /**
+         * @param regionSlicing whether to cut slices only from the doc region selected by range filters on the leading index sort
+         *                      fields, see {@link SortedRegionSlicer}
+         */
+        public Factory(
+            IndexedByShardId<? extends ShardContext> shardContexts,
+            Function<ShardContext, List<LuceneSliceQueue.QueryAndTags>> queryFunction,
+            DataPartitioning dataPartitioning,
+            DataPartitioning.AutoStrategy autoStrategy,
+            int docThresholdForAutoStrategy,
+            int taskConcurrency,
+            int maxPageSize,
+            int limit,
+            boolean needsScore,
+            LongSupplier directoryBytesRead,
+            int minDocsPerSlice,
+            QueryWarnings singleValueQueryWarnings,
+            @Nullable MinCompetitiveQuery.Factory minCompetitive,
+            boolean regionSlicing
+        ) {
             super(
                 shardContexts,
                 queryFunction,
@@ -148,7 +186,9 @@ public class LuceneSourceOperator extends LuceneOperator {
                 shardContext -> needsScore ? COMPLETE : COMPLETE_NO_SCORES,
                 directoryBytesRead,
                 minDocsPerSlice,
-                singleValueQueryWarnings
+                LuceneSliceQueue.LeafSplitGuard.NEVER,
+                singleValueQueryWarnings,
+                regionSlicing
             );
             this.refCounteds = shardContexts;
             this.maxPageSize = maxPageSize;

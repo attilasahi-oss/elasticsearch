@@ -217,6 +217,44 @@ public abstract class LuceneOperator extends SourceOperator {
             LuceneSliceQueue.LeafSplitGuard leafSplitGuard,
             QueryWarnings singleValueQueryWarnings
         ) {
+            this(
+                contextsByShardId,
+                queryFunction,
+                dataPartitioning,
+                autoStrategy,
+                docThresholdForAutoStrategy,
+                taskConcurrency,
+                limit,
+                needsScore,
+                scoreModeFunction,
+                directoryBytesRead,
+                minDocsPerSlice,
+                leafSplitGuard,
+                singleValueQueryWarnings,
+                true
+            );
+        }
+
+        /**
+         * @param regionSlicing whether to cut slices only from the doc region selected by range filters on the leading index sort
+         *                      fields, see {@link SortedRegionSlicer}
+         */
+        protected Factory(
+            IndexedByShardId<? extends ShardContext> contextsByShardId,
+            Function<ShardContext, List<LuceneSliceQueue.QueryAndTags>> queryFunction,
+            DataPartitioning dataPartitioning,
+            BiFunction<ShardContext, Query, LuceneSliceQueue.PartitioningStrategy> autoStrategy,
+            int docThresholdForAutoStrategy,
+            int taskConcurrency,
+            int limit,
+            boolean needsScore,
+            Function<ShardContext, ScoreMode> scoreModeFunction,
+            LongSupplier directoryBytesRead,
+            int minDocsPerSlice,
+            LuceneSliceQueue.LeafSplitGuard leafSplitGuard,
+            QueryWarnings singleValueQueryWarnings,
+            boolean regionSlicing
+        ) {
             this.directoryBytesRead = directoryBytesRead;
             this.singleValueQueryWarnings = singleValueQueryWarnings;
             this.limit = limit;
@@ -231,7 +269,8 @@ public abstract class LuceneOperator extends SourceOperator {
                 scoreModeFunction,
                 leafSplitGuard,
                 minDocsPerSlice,
-                singleValueQueryWarnings
+                singleValueQueryWarnings,
+                regionSlicing
             );
             this.taskConcurrency = Math.min(sliceQueue.totalSlices(), taskConcurrency);
             this.needsScore = needsScore;

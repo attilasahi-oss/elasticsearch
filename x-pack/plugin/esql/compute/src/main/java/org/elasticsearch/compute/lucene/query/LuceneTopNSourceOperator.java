@@ -150,6 +150,42 @@ public final class LuceneTopNSourceOperator extends LuceneOperator {
             LongSupplier directoryBytesRead,
             QueryWarnings singleValueQueryWarnings
         ) {
+            this(
+                contexts,
+                queryFunction,
+                dataPartitioning,
+                autoStrategy,
+                taskConcurrency,
+                maxPageSize,
+                limit,
+                sorts,
+                estimatedPerRowSortSize,
+                needsScore,
+                directoryBytesRead,
+                singleValueQueryWarnings,
+                true
+            );
+        }
+
+        /**
+         * @param regionSlicing whether to cut slices only from the doc region selected by range filters on the leading index sort
+         *                      fields, see {@link SortedRegionSlicer}
+         */
+        public Factory(
+            IndexedByShardId<? extends ShardContext> contexts,
+            Function<ShardContext, List<LuceneSliceQueue.QueryAndTags>> queryFunction,
+            DataPartitioning dataPartitioning,
+            DataPartitioning.AutoStrategy autoStrategy,
+            int taskConcurrency,
+            int maxPageSize,
+            int limit,
+            List<SortBuilder<?>> sorts,
+            long estimatedPerRowSortSize,
+            boolean needsScore,
+            LongSupplier directoryBytesRead,
+            QueryWarnings singleValueQueryWarnings,
+            boolean regionSlicing
+        ) {
             super(
                 contexts,
                 queryFunction,
@@ -162,7 +198,9 @@ public final class LuceneTopNSourceOperator extends LuceneOperator {
                 scoreModeFunction(sorts, needsScore),
                 directoryBytesRead,
                 LuceneSliceQueue.MIN_DOCS_PER_SLICE,
-                singleValueQueryWarnings
+                LuceneSliceQueue.LeafSplitGuard.NEVER,
+                singleValueQueryWarnings,
+                regionSlicing
             );
             this.contexts = contexts;
             this.maxPageSize = maxPageSize;

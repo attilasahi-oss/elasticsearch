@@ -552,7 +552,8 @@ public class EsPhysicalOperationProviders extends AbstractPhysicalOperationProvi
                 estimatedPerRowSortSize,
                 scoring,
                 directoryBytesRead,
-                singleValueQueryWarnings
+                singleValueQueryWarnings,
+                context.queryPragmas().regionSlicing()
             );
         } else if (esQueryExec.indexMode().isTsdb()) {
             luceneFactory = new TimeSeriesSourceOperator.Factory(
@@ -586,7 +587,8 @@ public class EsPhysicalOperationProviders extends AbstractPhysicalOperationProvi
                 directoryBytesRead,
                 context.queryPragmas().minDocsPerSlice(LuceneSliceQueue.MIN_DOCS_PER_SLICE),
                 singleValueQueryWarnings,
-                planMinCompetitive(context.luceneMinCompetitivePilot().get())
+                planMinCompetitive(context.luceneMinCompetitivePilot().get()),
+                context.queryPragmas().regionSlicing()
             );
         }
         Layout.Builder layout = new Layout.Builder();
